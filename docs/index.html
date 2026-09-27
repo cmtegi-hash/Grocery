@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lista de mercado</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1F2A24">
+<style>
+  :root {
+    --bg: #F6F3EC;
+    --ink: #1F2A24;
+    --accent: #4B6A4E;
+    --line: #D8D2C2;
+    --done: #9A9A8E;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141815;
+      --ink: #EDEAE2;
+      --accent: #7FA383;
+      --line: #2B322C;
+      --done: #5C6259;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141815;
+    --ink: #EDEAE2;
+    --accent: #7FA383;
+    --line: #2B322C;
+    --done: #5C6259;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100%;
+  }
+  header {
+    padding: 28px 20px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .sync-info {
+    font-size: 13px;
+    color: var(--done);
+  }
+  main {
+    padding: 12px 16px 100px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 17px;
+  }
+  .check {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: var(--bg);
+  }
+  li.comprado .check {
+    background: var(--accent);
+  }
+  li.comprado span.nombre {
+    color: var(--done);
+    text-decoration: line-through;
+  }
+  .vacio {
+    text-align: center;
+    color: var(--done);
+    padding: 60px 20px;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .barra {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: center;
+  }
+  button {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 13px 28px;
+    border-radius: 12px;
+    border: none;
+    background: var(--accent);
+    color: var(--bg);
+    width: 100%;
+    max-width: 448px;
+  }
+  button:active { opacity: 0.85; }
+  .error {
+    margin: 16px 4px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #5C2A2A20;
+    color: var(--ink);
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Lista de mercado</h1>
+  <div class="sync-info" id="sync-info">Sin datos todavía</div>
+</header>
+
+<main>
+  <ul id="lista"></ul>
+  <div id="mensaje-vacio" class="vacio" style="display:none">
+    Nada pendiente por ahora.<br>Agrega ítems desde la PC.
+  </div>
+  <div id="error" class="error" style="display:none"></div>
+</main>
+
+<div class="barra">
+  <button id="btn-actualizar">Actualizar</button>
+</div>
+
+<script>
+  // Reemplaza esta URL por la de tu archivo JSON en GitHub (raw)
+  const JSON_URL = "https://raw.githubusercontent.com/TU-USUARIO/TU-REPO/main/data/lista_mercado.json";
+
+  const STORAGE_KEY = "lista_mercado_estado";
+  const CACHE_KEY = "lista_mercado_cache";
+
+  function cargarEstadoComprados() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function guardarEstadoComprados(estado) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+    } catch (e) {
+      console.error("No se pudo guardar el estado", e);
+    }
+  }
+
+  function render(datos) {
+    const lista = document.getElementById("lista");
+    const vacio = document.getElementById("mensaje-vacio");
+    const syncInfo = document.getElementById("sync-info");
+
+    lista.innerHTML = "";
+    const items = datos.lista_activa || [];
+    const estado = cargarEstadoComprados();
+
+    if (datos.ultima_sincronizacion) {
+      syncInfo.textContent = "Última actualización: " + datos.ultima_sincronizacion;
+    }
+
+    if (items.length === 0) {
+      vacio.style.display = "block";
+      return;
+    }
+    vacio.style.display = "none";
+
+    items.forEach((nombre) => {
+      const comprado = !!estado[nombre];
+      const li = document.createElement("li");
+      li.className = comprado ? "comprado" : "";
+      li.innerHTML = `
+        <span class="check">${comprado ? "✓" : ""}</span>
+        <span class="nombre">${nombre}</span>
+      `;
+      li.addEventListener("click", () => {
+        const estadoActual = cargarEstadoComprados();
+        estadoActual[nombre] = !estadoActual[nombre];
+        guardarEstadoComprados(estadoActual);
+        render(datos);
+      });
+      lista.appendChild(li);
+    });
+  }
+
+  function mostrarError(msg) {
+    const error = document.getElementById("error");
+    error.textContent = msg;
+    error.style.display = "block";
+  }
+
+  async function actualizar() {
+    const error = document.getElementById("error");
+    error.style.display = "none";
+    try {
+      const respuesta = await fetch(JSON_URL + "?t=" + Date.now());
+      if (!respuesta.ok) throw new Error("Respuesta no válida");
+      const datos = await respuesta.json();
+      localStorage.setItem(CACHE_KEY, JSON.stringify(datos));
+      render(datos);
+    } catch (e) {
+      mostrarError("No se pudo actualizar (sin conexión). Mostrando la última versión guardada.");
+      const cache = localStorage.getItem(CACHE_KEY);
+      if (cache) render(JSON.parse(cache));
+    }
+  }
+
+  document.getElementById("btn-actualizar").addEventListener("click", actualizar);
+
+  // Al abrir la app, muestra lo último guardado de inmediato, sin esperar red
+  const cache = localStorage.getItem(CACHE_KEY);
+  if (cache) render(JSON.parse(cache));
+  actualizar();
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+</script>
+
+</body>
+</html>
