@@ -25,14 +25,20 @@
     "Carnes pizza",
     "Crema de chia",
     "Avena steel",
-    "Cofee xtra dark"
+    "Cofee xtra dark",
+    "Filtro agua",
+    "Pankeke",
+    "Leche sin lactosa"
   ],
   "lista_activa": [
     "Berries",
-    "Mango",
-    "Pina",
     "Almendraz",
-    "Pecanas"
+    "Pecanas",
+    "Filtro agua",
+    "Pankeke",
+    "Leche sin lactosa",
+    "Tortillas",
+    "Pinon"
   ],
-  "ultima_sincronizacion": "17 Oct, 09:34 PM"
+  "ultima_sincronizacion": "20 Oct, 04:16 PM"
 }
